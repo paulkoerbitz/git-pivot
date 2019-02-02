@@ -1,0 +1,8 @@
+[package]
+name = "git-stats"
+version = "0.1.0"
+authors = ["pkoerbitz"]
+edition = "2018"
+
+[dependencies]
+git2 = "0.8"
