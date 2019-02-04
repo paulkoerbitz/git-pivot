@@ -8,6 +8,12 @@ use git2::{Repository};
 use docopt::Docopt;
 use chrono::prelude::*;
 
+const DATE_FORMAT: &'static str = "%Y-%m-%d";
+
+fn parse_date(d: String) -> Option<DateTime<FixedOffset>> {
+    DateTime::parse_from_str(&d, DATE_FORMAT).ok()
+}
+
 const USAGE: &'static str = "
 Git Stats
 
@@ -16,8 +22,8 @@ Usage:
 
 Options:
     --path=<path>         Path to the repository [default: .]
-    --from=<start_date>   Start date
-    --until=<end_date>    End date
+    --from=<start_date>   Start date (format '%Y-%m-%d')
+    --until=<end_date>    End date (format '%Y-%m-%d')
 ";
 
 
@@ -34,8 +40,8 @@ fn main() {
         .unwrap_or_else(|e| e.exit());
 
     let path = args.flag_path;
-    let from = args.flag_from.and_then(|f| { DateTime::parse_from_str(&f, "%Y-%m-%d").ok() });
-    let until = args.flag_until.and_then(|u| { DateTime::parse_from_str(&u, "%Y-%m-%d").ok() });
+    let from = args.flag_from.and_then(parse_date);
+    let until = args.flag_until.and_then(parse_date);
 
     let repo = Repository::open(&path).unwrap();
     let mut revwalk = repo.revwalk().unwrap();
