@@ -1,12 +1,14 @@
 #[macro_use]
 extern crate serde_derive;
-extern crate docopt;
-extern crate git2;
 
-use std::collections::HashMap;
-use git2::{Repository};
+use std::boxed::Box;
+use git2::Repository;
 use docopt::Docopt;
 use chrono::prelude::*;
+
+mod statistics;
+
+use statistics::*;
 
 const DATE_FORMAT: &'static str = "%Y-%m-%d";
 
@@ -46,7 +48,11 @@ fn main() {
     let repo = Repository::open(&path).unwrap();
     let mut revwalk = repo.revwalk().unwrap();
     revwalk.push_head().unwrap();
-    let mut commits_by_author = HashMap::new();
+
+    let mut statistics: Vec<Box<dyn PerCommitStatistic>> = vec![
+        Box::new(CommitCountByAuthor::new()),
+        Box::new(Punchcard::new())
+    ];
 
     for oid in revwalk {
         let commit = repo.find_commit(oid.unwrap()).unwrap();
@@ -57,15 +63,11 @@ fn main() {
         if until.is_some() && until.unwrap().timestamp() < time.seconds() {
             continue;
         }
-        let author = commit.author();
-        author.name().map(|name| {
-          let count = commits_by_author.entry(name.to_string()).or_insert(0);
-          *count += 1;
-        });
+        for statistic in &mut statistics {
+            statistic.process_commit(&commit);
+        }
     }
-    let mut commits_by_author_vec: Vec<(&String, &i32)> = commits_by_author.iter().collect();
-    commits_by_author_vec.sort_by(|left, right| { right.1.cmp(left.1) });
-    for (name, count) in commits_by_author_vec {
-        println!("{}: {}", name, count);
+    for statistic in &statistics {
+        statistic.print_result();
     }
 }
