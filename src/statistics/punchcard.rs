@@ -27,7 +27,7 @@ impl PerCommitStatistic for Punchcard {
     fn process_commit(&mut self, commit: &Commit) -> () {
         let ctime = commit.time();
         let datetime = FixedOffset::east(ctime.offset_minutes() * 60).timestamp(ctime.seconds(), 0);
-        let mut count = self.at(&datetime.weekday(), datetime.hour());
+        let count = self.at(&datetime.weekday(), datetime.hour());
         *count += 1;
     }
 
